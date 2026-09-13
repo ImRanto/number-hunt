@@ -240,12 +240,12 @@ function App() {
       const isFound = found && value === target;
       context.beginPath();
       context.roundRect(x, y, cellSize, cellSize, radius);
-      context.fillStyle = isFound ? '#059669' : isMarked ? '#2563EB' : '#FFFFFF';
+      context.fillStyle = isMarked ? '#2563EB' : '#FFFFFF';
       context.fill();
       context.lineWidth = 1;
-      context.strokeStyle = isFound ? '#047857' : isMarked ? '#1D4ED8' : '#E2E8F0';
+      context.strokeStyle = isMarked ? '#1D4ED8' : '#E2E8F0';
       context.stroke();
-      context.fillStyle = isFound || isMarked ? '#FFFFFF' : '#334155';
+      context.fillStyle = isMarked ? '#FFFFFF' : '#334155';
       const fontSize = Math.max(12, Math.min(26, cellSize * (settings.difficulty === 'very-hard' ? 0.2 : settings.difficulty === 'hard' ? 0.235 : 0.27)));
       context.font = `700 ${fontSize}px "Space Mono", monospace`;
       context.textAlign = 'center';
@@ -253,17 +253,24 @@ function App() {
       context.fillText(String(value), x + cellSize / 2, y + cellSize / 2 + 1);
 
       if (isFound) {
-        const iconSize = Math.max(8, Math.min(14, cellSize * 0.18));
-        const iconX = x + cellSize - iconSize - Math.max(3, cellSize * 0.06);
-        const iconY = y + Math.max(3, cellSize * 0.06);
+        const badgeRadius = Math.max(6, Math.min(10, cellSize * 0.11));
+        const badgeX = x + cellSize - badgeRadius - Math.max(3, cellSize * 0.05);
+        const badgeY = y + badgeRadius + Math.max(3, cellSize * 0.05);
+
+        context.beginPath();
+        context.arc(badgeX, badgeY, badgeRadius, 0, Math.PI * 2);
+        context.fillStyle = '#059669';
+        context.fill();
+
+        const iconOffset = badgeRadius * 0.45;
         context.strokeStyle = '#FFFFFF';
-        context.lineWidth = Math.max(1.5, cellSize * 0.025);
+        context.lineWidth = Math.max(1.5, cellSize * 0.022);
         context.lineCap = 'round';
         context.beginPath();
-        context.moveTo(iconX, iconY);
-        context.lineTo(iconX + iconSize, iconY + iconSize);
-        context.moveTo(iconX + iconSize, iconY);
-        context.lineTo(iconX, iconY + iconSize);
+        context.moveTo(badgeX - iconOffset, badgeY - iconOffset);
+        context.lineTo(badgeX + iconOffset, badgeY + iconOffset);
+        context.moveTo(badgeX + iconOffset, badgeY - iconOffset);
+        context.lineTo(badgeX - iconOffset, badgeY + iconOffset);
         context.stroke();
       }
     });
@@ -517,22 +524,24 @@ function App() {
                   {numbers.map((value, index) => {
                     const isMarked = marked.has(value);
                     const isTarget = value === target;
+                    const isFoundCell = isTarget && found;
+                    const isUserMarkedCell = isMarked && !isFoundCell;
                     const crossSize = Math.max(8, Math.min(16, Math.round(140 / settings.cols)));
                     return (
                       <button
                         type="button"
                         key={`${value}-${index}`}
                         role="gridcell"
-                        aria-label={`Nombre ${value}${isMarked ? ', sélectionné' : ''}${isTarget && found ? ', trouvé' : ''}`}
+                        aria-label={`Nombre ${value}${isMarked ? ', sélectionné' : ''}${isFoundCell ? ', trouvé' : ''}`}
                         aria-pressed={isMarked}
                         onClick={() => toggleCell(value)}
                         data-testid={`grid-cell-${value}`}
                         className={cn(
                           'grid-cell relative flex items-center justify-center aspect-square min-w-0 rounded-lg border font-mono-app font-bold shadow-[0_1px_0_rgba(15,23,42,0.03)] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 dark:shadow-none dark:focus-visible:ring-offset-slate-900',
                           cellTextClass,
-                          !isMarked && !isTarget && 'border-[#E2E8F0] bg-white text-slate-700 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-blue-500/60 dark:hover:bg-blue-400/10 dark:hover:text-blue-300',
-                          isMarked && !isTarget && 'border-blue-500 bg-blue-600 text-white shadow-[0_3px_8px_rgba(37,99,235,0.24)] dark:border-blue-400 dark:bg-blue-500 dark:text-white',
-                          isTarget && found && 'grid-cell--found z-10 border-emerald-500 bg-emerald-600 text-white shadow-[0_4px_12px_rgba(5,150,105,0.3)] dark:border-emerald-400 dark:bg-emerald-500 dark:text-white',
+                          !isUserMarkedCell && 'border-[#E2E8F0] bg-white text-slate-700 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-blue-500/60 dark:hover:bg-blue-400/10 dark:hover:text-blue-300',
+                          isUserMarkedCell && 'border-blue-500 bg-blue-600 text-white shadow-[0_3px_8px_rgba(37,99,235,0.24)] dark:border-blue-400 dark:bg-blue-500 dark:text-white',
+                          isFoundCell && 'grid-cell--found z-10',
                         )}
                       >
                         <span className="relative z-0 pointer-events-none select-none">{value}</span>
@@ -541,7 +550,7 @@ function App() {
                             initial={{ scale: 0, opacity: 0, rotate: -45 }}
                             animate={{ scale: 1, opacity: 1, rotate: 0 }}
                             transition={{ type: 'spring', stiffness: 450, damping: 25 }}
-                            className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 z-10 flex items-center justify-center rounded-full bg-emerald-950/25 p-0.5 text-white backdrop-blur-[2px] dark:bg-emerald-950/40"
+                            className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 z-10 flex items-center justify-center rounded-full bg-emerald-600 p-0.5 text-white shadow-sm dark:bg-emerald-500"
                             data-testid={`grid-cell-cross-${value}`}
                           >
                             <X size={crossSize} strokeWidth={2.5} />
